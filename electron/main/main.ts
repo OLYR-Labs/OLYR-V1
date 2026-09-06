@@ -4,6 +4,7 @@ import { getDatabase } from "../database/database";
 import { login,logout } from "../ipc/auth";
 import { completeSetup,getSetupStatus } from "../ipc/setup";
 import { dashboard,listProducts,createProduct,startShift,currentShift,closeShift,completeSale,salesHistory,inventory,profitReport,createCustomer,customers,purchases,createPurchase,suppliers,saveSetting,getSettings,heldBills,holdBill,retrieveHeldBill,deleteHeldBill } from "../ipc/pos";
+import { splitSalePayments,cashMovement,cashMovements,voidSale,returnSale,returnsHistory,paymentSummary,lowStock,adjustStock,barcodeLabelData } from "../ipc/operations";
 import { hardwareStatus,configureHardware,openCashDrawer,testPrinter } from "../ipc/hardware";
 const isDevelopment=!app.isPackaged;
 function registerIpc(){
@@ -14,6 +15,7 @@ function registerIpc(){
  ipcMain.handle("pos:complete-sale",(_e,input)=>completeSale(input)); ipcMain.handle("pos:sales",(_e,id:string)=>salesHistory(id)); ipcMain.handle("pos:inventory",(_e,id:string)=>inventory(id)); ipcMain.handle("pos:profit",(_e,id:string)=>profitReport(id));
  ipcMain.handle("pos:create-customer",(_e,input)=>createCustomer(input.sessionId,input)); ipcMain.handle("pos:customers",(_e,id:string)=>customers(id)); ipcMain.handle("pos:purchases",(_e,id:string)=>purchases(id)); ipcMain.handle("pos:create-purchase",(_e,input)=>createPurchase(input.sessionId,input)); ipcMain.handle("pos:suppliers",(_e,id:string)=>suppliers(id));
  ipcMain.handle("pos:held-bills",(_e,id:string)=>heldBills(id)); ipcMain.handle("pos:hold-bill",(_e,input)=>holdBill(input.sessionId,input)); ipcMain.handle("pos:retrieve-held-bill",(_e,input)=>retrieveHeldBill(input.sessionId,input.id)); ipcMain.handle("pos:delete-held-bill",(_e,input)=>deleteHeldBill(input.sessionId,input.id));
+ ipcMain.handle("pos:split-payments",(_e,input)=>splitSalePayments(input.sessionId,input.saleId,input.payments)); ipcMain.handle("pos:cash-movement",(_e,input)=>cashMovement(input.sessionId,input.type,input.amount,input.reason)); ipcMain.handle("pos:cash-movements",(_e,id:string)=>cashMovements(id)); ipcMain.handle("pos:void-sale",(_e,input)=>voidSale(input.sessionId,input.saleId,input.reason)); ipcMain.handle("pos:return-sale",(_e,input)=>returnSale(input.sessionId,input.saleId,input.items,input.reason)); ipcMain.handle("pos:returns",(_e,id:string)=>returnsHistory(id)); ipcMain.handle("pos:payment-summary",(_e,id:string)=>paymentSummary(id)); ipcMain.handle("pos:low-stock",(_e,id:string)=>lowStock(id)); ipcMain.handle("pos:adjust-stock",(_e,input)=>adjustStock(input.sessionId,input.productId,input.quantity,input.reason)); ipcMain.handle("pos:barcode-labels",(_e,id:string)=>barcodeLabelData(id));
  ipcMain.handle("settings:get",(_e,id:string)=>getSettings(id)); ipcMain.handle("settings:save",(_e,input)=>saveSetting(input.sessionId,input.key,input.value));
  ipcMain.handle("hardware:status",(_e,id:string)=>hardwareStatus(id)); ipcMain.handle("hardware:configure",(_e,input)=>configureHardware(input.sessionId,input)); ipcMain.handle("hardware:open-drawer",(_e,id:string)=>openCashDrawer(id)); ipcMain.handle("hardware:test-printer",(_e,id:string)=>testPrinter(id));
 }
