@@ -3,6 +3,7 @@ import "./index.css";
 
 const money=(n:number,c="LKR")=>`${c} ${Number(n||0).toLocaleString("en-LK",{minimumFractionDigits:2})}`;
 const methods=["CASH","CARD","QR","BANK_TRANSFER"];
+const setMsg=(message:string)=>window.alert(message);
 function Field(p:any){return <label className="block"><span className="label">{p.label}</span><input {...p} value={p.value} onChange={e=>p.onChange(e.target.value)} className="input"/></label>}
 function Splash(){return <div className="splash"><img src="/branding/olyr-logo.png" onError={e=>e.currentTarget.style.display="none"}/><b>OLYR.</b><strong>OLYR POS</strong><span>Technology for what's next.</span></div>}
 function Login({status,onLogin}:{status:any;onLogin:any}){const[email,setEmail]=useState(status.user?.email||"");const[pw,setPw]=useState("");const[err,setErr]=useState("");return <div className="center-card"><div className="eyebrow">OFFLINE-FIRST POS</div><h1>Sign in to {status.business?.name||"OLYR POS"}</h1><p className="muted">{status.store?.name||"Your store"}</p><form onSubmit={async e=>{e.preventDefault();setErr("");try{onLogin(await window.olyr.auth.login({email,password:pw}))}catch(x){setErr(x instanceof Error?x.message:"Sign in failed")}}}><Field label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" required/><Field label="Password" type="password" value={pw} onChange={setPw} placeholder="Password" required/><button className="primary">Sign in →</button></form>{err&&<div className="error">{err}</div>}</div>}
