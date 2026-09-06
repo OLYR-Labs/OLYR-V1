@@ -2,150 +2,36 @@ import { FormEvent, useEffect, useState } from "react";
 import "./index.css";
 
 type Step = 0 | 1 | 2;
-type Screen = "loading" | "setup" | "ready" | "login";
-
+type Screen = "loading" | "setup" | "ready" | "login" | "workspace";
 const steps = ["Business", "Store", "Administrator"];
 
-function LogoMark() {
-  return <div className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-slate-950 text-lg font-black text-white shadow-lg shadow-slate-950/10">O</div>;
+function LogoMark() { return <div className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-slate-950 text-lg font-black text-white shadow-lg shadow-slate-950/10">O</div>; }
+function Field({ label, value, onChange, placeholder, type = "text", required = true }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; type?: string; required?: boolean }) {
+  return <label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">{label}</span><input required={required} type={type} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10" /></label>;
 }
-
-function Field({ label, value, onChange, placeholder, type = "text", required = true }: {
-  label: string; value: string; onChange: (value: string) => void; placeholder: string; type?: string; required?: boolean;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-2 block text-sm font-semibold text-slate-700">{label}</span>
-      <input required={required} type={type} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder}
-        className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10" />
-    </label>
-  );
+function Shell({ children, session, onLogout }: { children: React.ReactNode; session?: LoginResult; onLogout?: () => void }) {
+  return <main className="min-h-screen bg-[#f7f9fc] text-slate-950"><div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-6 lg:px-10"><header className="flex items-center justify-between"><div className="flex items-center gap-3"><LogoMark /><div><div className="text-[15px] font-bold tracking-tight">OLYR POS</div><div className="text-xs font-medium text-slate-400">by OLYR Labs</div></div></div>{session ? <div className="flex items-center gap-3"><div className="hidden text-right sm:block"><div className="text-sm font-bold text-slate-800">{session.user.name}</div><div className="text-xs text-slate-400">{session.user.role}</div></div><button type="button" onClick={onLogout} className="secondary-button !h-10 !px-4">Sign out</button></div> : <div className="hidden items-center gap-2 text-xs font-medium text-slate-400 sm:flex"><span className="h-2 w-2 rounded-full bg-emerald-500" />Offline-first</div>}</header><div className="flex flex-1 items-center justify-center py-10"><div className="w-full max-w-5xl">{children}</div></div><footer className="flex items-center justify-between text-xs text-slate-400"><span>OLYR Labs</span><span>OLYR POS · v0.1.0</span></footer></div></main>;
 }
-
-function Shell({ children }: { children: React.ReactNode }) {
-  return (
-    <main className="min-h-screen bg-[#f7f9fc] text-slate-950">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-6 lg:px-10">
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-3"><LogoMark /><div><div className="text-[15px] font-bold tracking-tight">OLYR POS</div><div className="text-xs font-medium text-slate-400">by OLYR Labs</div></div></div>
-          <div className="hidden items-center gap-2 text-xs font-medium text-slate-400 sm:flex"><span className="h-2 w-2 rounded-full bg-emerald-500" />Offline-first</div>
-        </header>
-        <div className="flex flex-1 items-center justify-center py-10"><div className="w-full max-w-3xl">{children}</div></div>
-        <footer className="flex items-center justify-between text-xs text-slate-400"><span>OLYR Labs</span><span>OLYR POS · v0.1.0</span></footer>
-      </div>
-    </main>
-  );
+function StartupSplash() { const [failed, setFailed] = useState(false); return <main className="startup-splash"><div className="startup-splash__glow startup-splash__glow--one"/><div className="startup-splash__glow startup-splash__glow--two"/><section className="startup-splash__content" aria-label="Starting OLYR POS"><div className="startup-splash__logo-wrap">{failed ? <div className="startup-splash__fallback">OLYR.</div> : <img className="startup-splash__logo" src="/branding/olyr-logo.png" alt="OLYR Labs" onError={() => setFailed(true)}/>}</div><div className="startup-splash__divider"/><p className="startup-splash__product">OLYR POS</p><p className="startup-splash__tagline">Technology for what&apos;s next.</p><div className="startup-splash__status"><span className="startup-splash__spinner"/>Preparing your workspace</div></section><div className="startup-splash__footer">OLYR Labs · Offline-first point of sale</div></main>; }
+function LoginScreen({ status, onLogin }: { status: SetupStatus; onLogin: (result: LoginResult) => void }) {
+  const [email, setEmail] = useState(status.user?.email ?? ""); const [password, setPassword] = useState(""); const [message, setMessage] = useState(""); const [busy, setBusy] = useState(false);
+  const submit = async (event: FormEvent) => { event.preventDefault(); setMessage(""); setBusy(true); try { const result = await window.olyr.auth.login({ email, password }); onLogin(result); } catch (error) { setMessage(error instanceof Error ? error.message : "Sign in failed. Please try again."); } finally { setBusy(false); } };
+  return <section className="mx-auto max-w-lg rounded-[28px] border border-slate-200/80 bg-white p-8 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-10"><div className="mb-8"><div className="mb-4 inline-flex rounded-xl bg-sky-50 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-sky-600">Welcome back</div><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Sign in to {status.business?.name ?? "OLYR POS"}.</h1><p className="mt-3 text-[15px] leading-6 text-slate-500">{status.store?.name ?? "Your store"} · Administrator access</p></div><form onSubmit={submit} className="grid gap-5"><Field label="Email address" value={email} onChange={setEmail} placeholder="you@example.com" type="email"/><Field label="Password" value={password} onChange={setPassword} placeholder="Enter your password" type="password"/><button disabled={busy} className="primary-button mt-2 disabled:cursor-not-allowed disabled:opacity-60" type="submit">{busy ? "Signing in…" : "Sign in"} <span>→</span></button></form>{message && <p className="mt-5 rounded-xl border border-red-100 bg-red-50 p-3 text-xs font-medium leading-5 text-red-700">{message}</p>}<p className="mt-5 text-center text-xs text-slate-400">Your account stays local to this device. No internet connection is required.</p></section>;
 }
-
-function StartupSplash() {
-  return (
-    <main className="startup-splash">
-      <div className="startup-splash__glow startup-splash__glow--one" />
-      <div className="startup-splash__glow startup-splash__glow--two" />
-      <section className="startup-splash__content" aria-label="Starting OLYR POS">
-        <div className="startup-splash__logo-wrap">
-          <img
-            className="startup-splash__logo"
-            src="/branding/olyr-logo.png"
-            alt="OLYR Labs"
-            onError={(event) => { event.currentTarget.style.display = "none"; }}
-          />
-          <div className="startup-splash__fallback" aria-hidden="true">OLYR.</div>
-        </div>
-        <div className="startup-splash__divider" />
-        <p className="startup-splash__product">OLYR POS</p>
-        <p className="startup-splash__tagline">Technology for what&apos;s next.</p>
-        <div className="startup-splash__status"><span className="startup-splash__spinner" />Preparing your workspace</div>
-      </section>
-      <div className="startup-splash__footer">OLYR Labs · Offline-first point of sale</div>
-    </main>
-  );
+function Workspace({ session }: { session: LoginResult }) {
+  const modules = [{ icon: "▦", title: "Point of Sale", text: "Start a sale, scan products, take payment." }, { icon: "◇", title: "Products", text: "Manage products, prices, barcodes, and stock." }, { icon: "◫", title: "Inventory", text: "Track stock levels, adjustments, and movements." }, { icon: "◎", title: "Customers", text: "Keep customer details and purchase history." }, { icon: "↗", title: "Reports", text: "Understand sales, payments, and performance." }, { icon: "⚙", title: "Settings", text: "Business, store, users, receipts, and devices." }];
+  return <div><div className="mb-8"><p className="mb-2 text-sm font-bold uppercase tracking-[0.18em] text-sky-600">Workspace</p><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Good to see you, {session.user.name.split(" ")[0]}.</h1><p className="mt-3 text-[15px] leading-6 text-slate-500">{session.store.name} · {session.business.name}</p></div><div className="mb-7 grid gap-4 sm:grid-cols-3"><div className="rounded-2xl bg-slate-950 p-5 text-white"><p className="text-xs font-semibold text-slate-400">Today&apos;s sales</p><p className="mt-2 text-3xl font-bold">{session.business.currency} 0.00</p><p className="mt-2 text-xs text-slate-500">No sales recorded yet</p></div><div className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-xs font-semibold text-slate-400">Transactions</p><p className="mt-2 text-3xl font-bold">0</p><p className="mt-2 text-xs text-slate-400">Ready for your first sale</p></div><div className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-xs font-semibold text-slate-400">Low stock</p><p className="mt-2 text-3xl font-bold">0</p><p className="mt-2 text-xs text-slate-400">Inventory is ready to configure</p></div></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{modules.map((module, index) => <button type="button" key={module.title} className={`rounded-[22px] border p-5 text-left transition hover:-translate-y-0.5 hover:shadow-lg ${index === 0 ? "border-sky-200 bg-sky-50/70" : "border-slate-200 bg-white"}`}><div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-white text-lg font-bold text-sky-600 shadow-sm">{module.icon}</div><h2 className="text-base font-bold">{module.title}</h2><p className="mt-2 text-sm leading-5 text-slate-500">{module.text}</p><span className="mt-5 inline-flex text-xs font-bold text-sky-600">Open {module.title} →</span></button>)}</div><p className="mt-7 text-center text-xs text-slate-400">Core workspace is local and offline-first. Modules will be activated as each subsystem is built.</p></div>;
 }
-
-function LoginScreen({ status }: { status: SetupStatus }) {
-  const [email, setEmail] = useState(status.user?.email ?? "");
-  const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("The local account is ready. Authentication wiring is the next security step.");
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    setMessage("Login verification will be connected next. Your account and password are already stored securely on this device.");
-  };
-
-  return (
-    <section className="mx-auto max-w-lg rounded-[28px] border border-slate-200/80 bg-white p-8 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-10">
-      <div className="mb-8"><div className="mb-4 inline-flex rounded-xl bg-sky-50 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-sky-600">Welcome back</div>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Sign in to {status.business?.name ?? "OLYR POS"}.</h1>
-        <p className="mt-3 text-[15px] leading-6 text-slate-500">{status.store?.name ?? "Your store"} · Administrator access</p></div>
-      <form onSubmit={submit} className="grid gap-5">
-        <Field label="Email address" value={email} onChange={setEmail} placeholder="you@example.com" type="email" />
-        <Field label="Password" value={password} onChange={setPassword} placeholder="Enter your password" type="password" />
-        <button className="primary-button mt-2" type="submit">Sign in <span>→</span></button>
-      </form>
-      <p className="mt-5 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">{message}</p>
-    </section>
-  );
-}
-
 export default function App() {
-  const [screen, setScreen] = useState<Screen>("loading");
-  const [step, setStep] = useState<Step>(0);
-  const [status, setStatus] = useState<SetupStatus>({ isSetupComplete: false });
-  const [error, setError] = useState("");
-  const [businessName, setBusinessName] = useState("");
-  const [businessPhone, setBusinessPhone] = useState("");
-  const [currency, setCurrency] = useState("LKR");
-  const [storeName, setStoreName] = useState("");
-  const [storeAddress, setStoreAddress] = useState("");
-  const [adminName, setAdminName] = useState("");
-  const [adminEmail, setAdminEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  useEffect(() => {
-    window.olyr.setup.getStatus().then((result) => {
-      setStatus(result);
-      setScreen(result.isSetupComplete ? "login" : "setup");
-    }).catch(() => {
-      setError("OLYR POS could not initialize its local database.");
-      setScreen("setup");
-    });
-  }, []);
-
-  const next = (event: FormEvent) => { event.preventDefault(); setError(""); setStep((current) => Math.min(current + 1, 2) as Step); };
-  const back = () => setStep((current) => Math.max(current - 1, 0) as Step);
-
-  const finishSetup = async (event: FormEvent) => {
-    event.preventDefault(); setError("");
-    try {
-      const result = await window.olyr.setup.complete({ businessName, businessPhone, currency, storeName, storeAddress, adminName, adminEmail, password });
-      setStatus(result); setScreen("ready"); setPassword("");
-    } catch (setupError) {
-      setError(setupError instanceof Error ? setupError.message : "Setup could not be completed.");
-    }
-  };
-
-  if (screen === "loading") return <StartupSplash />;
-  if (screen === "login") return <Shell><LoginScreen status={status} /></Shell>;
-
-  if (screen === "ready") return <Shell><section className="rounded-[28px] border border-slate-200/80 bg-white p-8 text-center shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-12">
-    <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-2xl text-emerald-600">✓</div>
-    <p className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-sky-600">Setup saved locally</p>
-    <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Welcome to OLYR POS.</h1>
-    <p className="mx-auto mt-3 max-w-lg text-[15px] leading-6 text-slate-500">Your business, store, and administrator account have been saved to the local SQLite database.</p>
-    <div className="mx-auto mt-8 grid max-w-xl gap-3 text-left sm:grid-cols-3">{[status.business?.name ?? "Business", status.store?.name ?? "Store", status.user?.name ?? "Administrator"].map((item, index) => <div key={item} className="rounded-2xl bg-slate-50 p-4"><div className="text-xs font-semibold uppercase tracking-wide text-slate-400">{steps[index]}</div><div className="mt-1 truncate text-sm font-bold text-slate-800">{item}</div></div>)}</div>
-    <button type="button" onClick={() => setScreen("login")} className="primary-button mt-9">Continue to login <span>→</span></button>
-  </section></Shell>;
-
-  return <Shell>
-    <div className="mb-8"><div className="mb-4 flex items-center justify-between"><span className="text-sm font-semibold text-slate-500">Setup · Step {step + 1} of 3</span><span className="text-sm font-medium text-slate-400">Takes about 2 minutes</span></div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-sky-500 transition-all duration-500" style={{ width: `${((step + 1) / 3) * 100}%` }} /></div>
-      <div className="mt-3 grid grid-cols-3 text-xs font-semibold text-slate-400">{steps.map((item, index) => <span key={item} className={index <= step ? "text-sky-600" : ""}>{item}</span>)}</div></div>
-    {error && <div className="mb-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}
-    <section className="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-      {step === 0 && <form onSubmit={next} className="p-7 sm:p-10"><div className="mb-9 max-w-xl"><div className="mb-4 inline-flex rounded-xl bg-sky-50 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-sky-600">Welcome to OLYR POS</div><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Let&apos;s set up your business.</h1><p className="mt-3 text-[15px] leading-6 text-slate-500">This information will be stored locally and used throughout your POS system.</p></div><div className="grid gap-5 sm:grid-cols-2"><div className="sm:col-span-2"><Field label="Business name" value={businessName} onChange={setBusinessName} placeholder="e.g. Sunrise Supermarket" /></div><Field label="Phone number" value={businessPhone} onChange={setBusinessPhone} placeholder="e.g. 011 234 5678" required={false} /><label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">Currency</span><select value={currency} onChange={(event) => setCurrency(event.target.value)} className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] text-slate-900 outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"><option value="LKR">LKR — Sri Lankan Rupee</option><option value="USD">USD — US Dollar</option><option value="EUR">EUR — Euro</option></select></label></div><div className="mt-9 flex justify-end"><button type="submit" className="primary-button">Continue <span>→</span></button></div></form>}
-      {step === 1 && <form onSubmit={next} className="p-7 sm:p-10"><div className="mb-9 max-w-xl"><div className="mb-4 inline-flex rounded-xl bg-sky-50 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-sky-600">Your first location</div><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Add your store.</h1><p className="mt-3 text-[15px] leading-6 text-slate-500">You can add more branches later.</p></div><div className="grid gap-5"><Field label="Store name" value={storeName} onChange={setStoreName} placeholder={businessName || "e.g. Main Branch"} /><Field label="Store address" value={storeAddress} onChange={setStoreAddress} placeholder="e.g. 123 Main Street, Colombo" /></div><div className="mt-9 flex items-center justify-between"><button type="button" onClick={back} className="secondary-button">← Back</button><button type="submit" className="primary-button">Continue <span>→</span></button></div></form>}
-      {step === 2 && <form onSubmit={finishSetup} className="p-7 sm:p-10"><div className="mb-9 max-w-xl"><div className="mb-4 inline-flex rounded-xl bg-sky-50 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-sky-600">Your administrator</div><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Create your owner account.</h1><p className="mt-3 text-[15px] leading-6 text-slate-500">Your password is hashed before it is stored locally.</p></div><div className="grid gap-5 sm:grid-cols-2"><Field label="Your name" value={adminName} onChange={setAdminName} placeholder="e.g. Banuka Perera" /><Field label="Email address" value={adminEmail} onChange={setAdminEmail} placeholder="you@example.com" type="email" /><div className="sm:col-span-2"><Field label="Password" value={password} onChange={setPassword} placeholder="Create a strong password" type="password" /><p className="mt-2 text-xs text-slate-400">Use at least 8 characters.</p></div></div><div className="mt-9 flex items-center justify-between"><button type="button" onClick={back} className="secondary-button">← Back</button><button type="submit" className="primary-button">Save setup <span>→</span></button></div></form>}
-    </section>
-    <p className="mt-6 text-center text-xs leading-5 text-slate-400">OLYR POS works offline. Your core business data stays on this device.</p>
-  </Shell>;
+  const [screen, setScreen] = useState<Screen>("loading"); const [step, setStep] = useState<Step>(0); const [status, setStatus] = useState<SetupStatus>({ isSetupComplete: false }); const [session, setSession] = useState<LoginResult | null>(null); const [error, setError] = useState("");
+  const [businessName, setBusinessName] = useState(""); const [businessPhone, setBusinessPhone] = useState(""); const [currency, setCurrency] = useState("LKR"); const [storeName, setStoreName] = useState(""); const [storeAddress, setStoreAddress] = useState(""); const [adminName, setAdminName] = useState(""); const [adminEmail, setAdminEmail] = useState(""); const [password, setPassword] = useState("");
+  useEffect(() => { window.olyr.setup.getStatus().then((result) => { setStatus(result); setScreen(result.isSetupComplete ? "login" : "setup"); }).catch(() => { setError("OLYR POS could not initialize its local database."); setScreen("setup"); }); }, []);
+  const next = (event: FormEvent) => { event.preventDefault(); setError(""); setStep((current) => Math.min(current + 1, 2) as Step); }; const back = () => setStep((current) => Math.max(current - 1, 0) as Step);
+  const finishSetup = async (event: FormEvent) => { event.preventDefault(); setError(""); try { const result = await window.olyr.setup.complete({ businessName, businessPhone, currency, storeName, storeAddress, adminName, adminEmail, password }); setStatus(result); setScreen("ready"); setPassword(""); } catch (setupError) { setError(setupError instanceof Error ? setupError.message : "Setup could not be completed."); } };
+  const handleLogout = async () => { if (session) await window.olyr.auth.logout(session.sessionId); setSession(null); setScreen("login"); setStatus((current) => ({ ...current, isSetupComplete: true })); };
+  if (screen === "loading") return <StartupSplash/>;
+  if (screen === "login") return <Shell><LoginScreen status={status} onLogin={(result) => { setSession(result); setStatus((current) => ({ ...current, business: { ...current.business!, name: result.business.name, id: result.business.id, currency: result.business.currency }, store: result.store, user: result.user })); setScreen("workspace"); }}/></Shell>;
+  if (screen === "workspace" && session) return <Shell session={session} onLogout={() => void handleLogout()}><Workspace session={session}/></Shell>;
+  if (screen === "ready") return <Shell><section className="rounded-[28px] border border-slate-200/80 bg-white p-8 text-center shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-12"><div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-2xl text-emerald-600">✓</div><p className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-sky-600">Setup saved locally</p><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Welcome to OLYR POS.</h1><p className="mx-auto mt-3 max-w-lg text-[15px] leading-6 text-slate-500">Your business, store, and administrator account have been saved to the local SQLite database.</p><div className="mx-auto mt-8 grid max-w-xl gap-3 text-left sm:grid-cols-3">{[status.business?.name ?? "Business", status.store?.name ?? "Store", status.user?.name ?? "Administrator"].map((item, index) => <div key={item} className="rounded-2xl bg-slate-50 p-4"><div className="text-xs font-semibold uppercase tracking-wide text-slate-400">{steps[index]}</div><div className="mt-1 truncate text-sm font-bold text-slate-800">{item}</div></div>)}</div><button type="button" onClick={() => setScreen("login")} className="primary-button mt-9">Continue to login <span>→</span></button></section></Shell>;
+  return <Shell><div className="mb-8"><div className="mb-4 flex items-center justify-between"><span className="text-sm font-semibold text-slate-500">Setup · Step {step + 1} of 3</span><span className="text-sm font-medium text-slate-400">Takes about 2 minutes</span></div><div className="h-1.5 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-sky-500 transition-all duration-500" style={{ width: `${((step + 1) / 3) * 100}%` }}/></div><div className="mt-3 grid grid-cols-3 text-xs font-semibold text-slate-400">{steps.map((item, index) => <span key={item} className={index <= step ? "text-sky-600" : ""}>{item}</span>)}</div></div>{error && <div className="mb-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}<section className="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.08)]">{step === 0 && <form onSubmit={next} className="p-7 sm:p-10"><div className="mb-9 max-w-xl"><div className="mb-4 inline-flex rounded-xl bg-sky-50 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-sky-600">Welcome to OLYR POS</div><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Let&apos;s set up your business.</h1><p className="mt-3 text-[15px] leading-6 text-slate-500">This information will be stored locally and used throughout your POS system.</p></div><div className="grid gap-5 sm:grid-cols-2"><div className="sm:col-span-2"><Field label="Business name" value={businessName} onChange={setBusinessName} placeholder="e.g. Sunrise Supermarket"/></div><Field label="Phone number" value={businessPhone} onChange={setBusinessPhone} placeholder="e.g. 011 234 5678" required={false}/><label className="block"><span className="mb-2 block text-sm font-semibold text-slate-700">Currency</span><select value={currency} onChange={(event) => setCurrency(event.target.value)} className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] text-slate-900 outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"><option value="LKR">LKR — Sri Lankan Rupee</option><option value="USD">USD — US Dollar</option><option value="EUR">EUR — Euro</option></select></label></div><div className="mt-9 flex justify-end"><button type="submit" className="primary-button">Continue <span>→</span></button></div></form>}{step === 1 && <form onSubmit={next} className="p-7 sm:p-10"><div className="mb-9 max-w-xl"><div className="mb-4 inline-flex rounded-xl bg-sky-50 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-sky-600">Your first location</div><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Add your store.</h1><p className="mt-3 text-[15px] leading-6 text-slate-500">You can add more branches later.</p></div><div className="grid gap-5"><Field label="Store name" value={storeName} onChange={setStoreName} placeholder={businessName || "e.g. Main Branch"}/><Field label="Store address" value={storeAddress} onChange={setStoreAddress} placeholder="e.g. 123 Main Street, Colombo"/></div><div className="mt-9 flex items-center justify-between"><button type="button" onClick={back} className="secondary-button">← Back</button><button type="submit" className="primary-button">Continue <span>→</span></button></div></form>}{step === 2 && <form onSubmit={finishSetup} className="p-7 sm:p-10"><div className="mb-9 max-w-xl"><div className="mb-4 inline-flex rounded-xl bg-sky-50 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-sky-600">Your administrator</div><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Create your owner account.</h1><p className="mt-3 text-[15px] leading-6 text-slate-500">Your password is hashed before it is stored locally.</p></div><div className="grid gap-5 sm:grid-cols-2"><Field label="Your name" value={adminName} onChange={setAdminName} placeholder="e.g. Banuka Perera"/><Field label="Email address" value={adminEmail} onChange={setAdminEmail} placeholder="you@example.com" type="email"/><div className="sm:col-span-2"><Field label="Password" value={password} onChange={setPassword} placeholder="Create a strong password" type="password"/><p className="mt-2 text-xs text-slate-400">Use at least 8 characters.</p></div></div><div className="mt-9 flex items-center justify-between"><button type="button" onClick={back} className="secondary-button">← Back</button><button type="submit" className="primary-button">Save setup <span>→</span></button></div></form>}</section><p className="mt-6 text-center text-xs leading-5 text-slate-400">OLYR POS works offline. Your core business data stays on this device.</p></Shell>;
 }

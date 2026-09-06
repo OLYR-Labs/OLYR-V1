@@ -1,12 +1,14 @@
 import { contextBridge, ipcRenderer } from "electron";
 
 contextBridge.exposeInMainWorld("olyr", {
-  app: {
-    name: "OLYR POS",
-  },
+  app: { name: "OLYR POS" },
   setup: {
     getStatus: () => ipcRenderer.invoke("setup:get-status"),
     complete: (input: SetupInput) => ipcRenderer.invoke("setup:complete", input),
+  },
+  auth: {
+    login: (input: LoginInput) => ipcRenderer.invoke("auth:login", input),
+    logout: (sessionId: string) => ipcRenderer.invoke("auth:logout", sessionId),
   },
 });
 
@@ -20,3 +22,5 @@ interface SetupInput {
   adminEmail: string;
   password: string;
 }
+
+interface LoginInput { email: string; password: string; }
