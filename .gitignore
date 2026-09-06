@@ -1,0 +1,17 @@
+node_modules/
+dist/
+dist-electron/
+.next/
+.env
+.env.*
+!.env.example
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+*.db
+*.db-shm
+*.db-wal
+coverage/
