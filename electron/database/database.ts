@@ -31,6 +31,8 @@ export function getDatabase(): DatabaseSync {
     CREATE TABLE IF NOT EXISTS audit_logs (id TEXT PRIMARY KEY,user_id TEXT,action TEXT NOT NULL,entity_type TEXT NOT NULL,entity_id TEXT,details TEXT,created_at TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL);
     CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY,value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS hardware_devices (id TEXT PRIMARY KEY,store_id TEXT NOT NULL,type TEXT NOT NULL,name TEXT NOT NULL,connection TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'NOT_CONFIGURED',config_json TEXT NOT NULL DEFAULT '{}',created_at TEXT NOT NULL,updated_at TEXT NOT NULL,FOREIGN KEY(store_id) REFERENCES stores(id) ON DELETE CASCADE);
+    CREATE TABLE IF NOT EXISTS held_bills (id TEXT PRIMARY KEY,store_id TEXT NOT NULL,user_id TEXT NOT NULL,reference_number TEXT NOT NULL UNIQUE,item_json TEXT NOT NULL,discount REAL NOT NULL DEFAULT 0,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,FOREIGN KEY(store_id) REFERENCES stores(id) ON DELETE CASCADE,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
+    CREATE INDEX IF NOT EXISTS idx_held_bills_store ON held_bills(store_id,created_at);
   `);
   return database;
 }
