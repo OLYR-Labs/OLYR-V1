@@ -1,7 +1,14 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import path from "node:path";
+import { getDatabase } from "../database/database";
+import { completeSetup, getSetupStatus } from "../ipc/setup";
 
 const isDevelopment = !app.isPackaged;
+
+function registerIpc(): void {
+  ipcMain.handle("setup:get-status", () => getSetupStatus());
+  ipcMain.handle("setup:complete", (_event, input) => completeSetup(input));
+}
 
 function createWindow(): void {
   const window = new BrowserWindow({
@@ -29,6 +36,8 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  getDatabase();
+  registerIpc();
   createWindow();
 
   app.on("activate", () => {
