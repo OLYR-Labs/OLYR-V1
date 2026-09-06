@@ -3,7 +3,7 @@ contextBridge.exposeInMainWorld("olyr",{app:{name:"OLYR POS"},setup:{getStatus:(
 interface SetupInput{businessName:string;businessPhone:string;currency:string;storeName:string;storeAddress:string;adminName:string;adminEmail:string;password:string}
 interface LoginInput{email:string;password:string}
 interface ProductInput{sessionId:string;name:string;barcode?:string;sku?:string;category?:string;brand?:string;costPrice?:number;sellingPrice:number;wholesalePrice?:number;stock?:number;minStock?:number;unit?:string}
-interface SaleInput{sessionId:string;items:{productId:string;quantity:number}[];paymentMethod:string;cashReceived:number;discount:number;customerId?:string}
+interface SaleInput{sessionId:string;items:{productId:string;quantity:number}[];paymentMethod:string;cashReceived:number;discount:number;customerId?:string;paymentDetails?:Record<string,string>}
 interface CustomerInput{sessionId:string;name:string;phone?:string;email?:string;address?:string}
 interface PurchaseInput{sessionId:string;supplierId?:string;referenceNumber?:string;items:{productId:string;quantity:number;costPrice:number}[]}
 interface HoldBillInput{sessionId:string;items:any[];discount?:number}
