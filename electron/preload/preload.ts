@@ -1,26 +1,7 @@
 import { contextBridge, ipcRenderer } from "electron";
-
-contextBridge.exposeInMainWorld("olyr", {
-  app: { name: "OLYR POS" },
-  setup: {
-    getStatus: () => ipcRenderer.invoke("setup:get-status"),
-    complete: (input: SetupInput) => ipcRenderer.invoke("setup:complete", input),
-  },
-  auth: {
-    login: (input: LoginInput) => ipcRenderer.invoke("auth:login", input),
-    logout: (sessionId: string) => ipcRenderer.invoke("auth:logout", sessionId),
-  },
-});
-
-interface SetupInput {
-  businessName: string;
-  businessPhone: string;
-  currency: string;
-  storeName: string;
-  storeAddress: string;
-  adminName: string;
-  adminEmail: string;
-  password: string;
-}
-
-interface LoginInput { email: string; password: string; }
+contextBridge.exposeInMainWorld("olyr",{app:{name:"OLYR POS"},setup:{getStatus:()=>ipcRenderer.invoke("setup:get-status"),complete:(input:SetupInput)=>ipcRenderer.invoke("setup:complete",input)},auth:{login:(input:LoginInput)=>ipcRenderer.invoke("auth:login",input),logout:(id:string)=>ipcRenderer.invoke("auth:logout",id)},pos:{dashboard:(id:string)=>ipcRenderer.invoke("pos:dashboard",id),products:(id:string,q?:string)=>ipcRenderer.invoke("pos:products",id,q),createProduct:(input:ProductInput)=>ipcRenderer.invoke("pos:create-product",input),startShift:(id:string,cash:number)=>ipcRenderer.invoke("pos:start-shift",id,cash),currentShift:(id:string)=>ipcRenderer.invoke("pos:current-shift",id),completeSale:(input:SaleInput)=>ipcRenderer.invoke("pos:complete-sale",input),sales:(id:string)=>ipcRenderer.invoke("pos:sales",id)},hardware:{status:(id:string)=>ipcRenderer.invoke("hardware:status",id),configure:(input:HardwareConfig)=>ipcRenderer.invoke("hardware:configure",input),openDrawer:(id:string)=>ipcRenderer.invoke("hardware:open-drawer",id),testPrinter:(id:string)=>ipcRenderer.invoke("hardware:test-printer",id)}});
+interface SetupInput{businessName:string;businessPhone:string;currency:string;storeName:string;storeAddress:string;adminName:string;adminEmail:string;password:string}
+interface LoginInput{email:string;password:string}
+interface ProductInput{sessionId:string;name:string;barcode?:string;sku?:string;category?:string;brand?:string;costPrice:number;sellingPrice:number;wholesalePrice?:number;stock?:number;minStock?:number;unit?:string}
+interface SaleInput{sessionId:string;items:{productId:string;quantity:number}[];paymentMethod:string;cashReceived:number;discount:number;customerId?:string}
+interface HardwareConfig{sessionId:string;type:string;name:string;connection:string;config?:Record<string,unknown>}
