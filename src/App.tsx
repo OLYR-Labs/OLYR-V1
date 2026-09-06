@@ -37,6 +37,31 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
+function StartupSplash() {
+  return (
+    <main className="startup-splash">
+      <div className="startup-splash__glow startup-splash__glow--one" />
+      <div className="startup-splash__glow startup-splash__glow--two" />
+      <section className="startup-splash__content" aria-label="Starting OLYR POS">
+        <div className="startup-splash__logo-wrap">
+          <img
+            className="startup-splash__logo"
+            src="/branding/olyr-logo.png"
+            alt="OLYR Labs"
+            onError={(event) => { event.currentTarget.style.display = "none"; }}
+          />
+          <div className="startup-splash__fallback" aria-hidden="true">OLYR.</div>
+        </div>
+        <div className="startup-splash__divider" />
+        <p className="startup-splash__product">OLYR POS</p>
+        <p className="startup-splash__tagline">Technology for what&apos;s next.</p>
+        <div className="startup-splash__status"><span className="startup-splash__spinner" />Preparing your workspace</div>
+      </section>
+      <div className="startup-splash__footer">OLYR Labs · Offline-first point of sale</div>
+    </main>
+  );
+}
+
 function LoginScreen({ status }: { status: SetupStatus }) {
   const [email, setEmail] = useState(status.user?.email ?? "");
   const [password, setPassword] = useState("");
@@ -99,7 +124,7 @@ export default function App() {
     }
   };
 
-  if (screen === "loading") return <Shell><div className="rounded-[28px] border border-slate-200/80 bg-white p-12 text-center shadow-[0_24px_70px_rgba(15,23,42,0.08)]"><div className="mx-auto mb-5 h-10 w-10 animate-pulse rounded-xl bg-sky-100" /><p className="text-sm font-semibold text-slate-500">Starting OLYR POS…</p></div></Shell>;
+  if (screen === "loading") return <StartupSplash />;
   if (screen === "login") return <Shell><LoginScreen status={status} /></Shell>;
 
   if (screen === "ready") return <Shell><section className="rounded-[28px] border border-slate-200/80 bg-white p-8 text-center shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-12">
