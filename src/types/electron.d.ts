@@ -1,2 +1,12 @@
 export {};
-declare global { interface Window { olyr:any } interface SetupStatus{isSetupComplete:boolean;business?:any;store?:any;user?:any} interface SetupInput{businessName:string;businessPhone:string;currency:string;storeName:string;storeAddress:string;adminName:string;adminEmail:string;password:string} interface LoginResult{sessionId:string;expiresAt:string;user:any;business:any;store:any} interface LoginInput{email:string;password:string} interface ProductInput{sessionId:string;name:string;barcode?:string;sku?:string;category?:string;brand?:string;costPrice:number;sellingPrice:number;wholesalePrice?:number;stock?:number;minStock?:number;unit?:string} interface SaleInput{sessionId:string;items:{productId:string;quantity:number}[];paymentMethod:string;cashReceived:number;discount:number;customerId?:string} interface HardwareConfig{sessionId:string;type:string;name:string;connection:string;config?:Record<string,unknown>} } 
+declare global {
+ interface Window { olyr:any }
+ interface SetupStatus{isSetupComplete:boolean;business?:any;store?:any;user?:any}
+ interface SetupInput{businessName:string;businessPhone:string;currency:string;storeName:string;storeAddress:string;adminName:string;adminEmail:string;password:string}
+ interface LoginResult{sessionId:string;expiresAt:string;user:any;business:any;store:any}
+ interface LoginInput{email:string;password:string}
+ interface ProductInput{sessionId:string;name:string;barcode?:string;sku?:string;category?:string;brand?:string;costPrice?:number;sellingPrice:number;wholesalePrice?:number;stock?:number;minStock?:number;unit?:string}
+ interface SaleInput{sessionId:string;items:{productId:string;quantity:number}[];paymentMethod:string;cashReceived:number;discount:number;customerId?:string}
+ interface CustomerInput{sessionId:string;name:string;phone?:string;email?:string;address?:string}
+ interface HardwareConfig{sessionId:string;type:string;name:string;connection:string;config?:Record<string,unknown>}
+}
