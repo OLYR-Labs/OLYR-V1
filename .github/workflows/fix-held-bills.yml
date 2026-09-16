@@ -1,0 +1,33 @@
+name: Apply held bills fix
+
+on:
+  push:
+    branches: [fix/held-bills-button]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix Held Bills button
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('src/App.tsx')
+          s = p.read_text(encoding='utf-8')
+          old = 'disabled={!cart.length||!shift} className="secondary" onClick={()=>void openHeld()}'
+          new = 'disabled={!shift} className="secondary" onClick={()=>void openHeld()}'
+          if s.count(old) != 1:
+              raise SystemExit(f'Expected exactly one Held Bills button match, found {s.count(old)}')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+      - name: Commit fix and remove temporary workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm .github/workflows/fix-held-bills.yml
+          git add src/App.tsx .github/workflows/fix-held-bills.yml
+          git commit -m "fix: keep held bills accessible after holding or paying"
+          git push
