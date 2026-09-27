@@ -1,10 +1,10 @@
 import { getDatabase } from "../database/database";
 import { completeSale } from "./pos";
-import { audit, requireSession } from "./auth";
+import { assertNotDemo, audit, requireSession } from "./auth";
 
 const paymentMethods=["CASH","CARD","QR","BANK_TRANSFER"];
 
-export function completeMixedSale(input:any){
+export function completeMixedSale(input:any){assertNotDemo(input.sessionId,"mixed payments");
   const db=getDatabase();
   const payments=Array.isArray(input.payments)
     ? input.payments
