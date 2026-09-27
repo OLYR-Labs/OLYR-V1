@@ -27,7 +27,7 @@ export function getDatabase(): DatabaseSync {
     CREATE TABLE IF NOT EXISTS inventory_movements (id TEXT PRIMARY KEY,product_id TEXT NOT NULL,user_id TEXT NOT NULL,type TEXT NOT NULL,quantity REAL NOT NULL,reference_id TEXT,reason TEXT,created_at TEXT NOT NULL,FOREIGN KEY(product_id) REFERENCES products(id),FOREIGN KEY(user_id) REFERENCES users(id));
     CREATE TABLE IF NOT EXISTS purchases (id TEXT PRIMARY KEY,store_id TEXT NOT NULL,supplier_id TEXT,user_id TEXT NOT NULL,reference_number TEXT NOT NULL,subtotal REAL NOT NULL,total REAL NOT NULL,status TEXT NOT NULL DEFAULT 'RECEIVED',created_at TEXT NOT NULL,FOREIGN KEY(store_id) REFERENCES stores(id),FOREIGN KEY(supplier_id) REFERENCES suppliers(id),FOREIGN KEY(user_id) REFERENCES users(id));
     CREATE TABLE IF NOT EXISTS purchase_items (id TEXT PRIMARY KEY,purchase_id TEXT NOT NULL,product_id TEXT NOT NULL,quantity REAL NOT NULL,cost_price REAL NOT NULL,line_total REAL NOT NULL,FOREIGN KEY(purchase_id) REFERENCES purchases(id) ON DELETE CASCADE,FOREIGN KEY(product_id) REFERENCES products(id));
-    CREATE TABLE IF NOT EXISTS returns (id TEXT PRIMARY KEY,sale_id TEXT NOT NULL,user_id TEXT NOT NULL,total REAL NOT NULL,reason TEXT,created_at TEXT NOT NULL,FOREIGN KEY(sale_id) REFERENCES sales(id),FOREIGN KEY(user_id) REFERENCES users(id));
+    CREATE TABLE IF NOT EXISTS returns (id TEXT PRIMARY KEY,sale_id TEXT NOT NULL,user_id TEXT NOT NULL,total REAL NOT NULL,reason TEXT,refund_method TEXT NOT NULL DEFAULT 'CASH',refund_reference TEXT,created_at TEXT NOT NULL,FOREIGN KEY(sale_id) REFERENCES sales(id),FOREIGN KEY(user_id) REFERENCES users(id));
     CREATE TABLE IF NOT EXISTS return_items (id TEXT PRIMARY KEY,return_id TEXT NOT NULL,product_id TEXT NOT NULL,quantity REAL NOT NULL,unit_price REAL NOT NULL,line_total REAL NOT NULL,FOREIGN KEY(return_id) REFERENCES returns(id) ON DELETE CASCADE,FOREIGN KEY(product_id) REFERENCES products(id));
     CREATE TABLE IF NOT EXISTS cash_movements (id TEXT PRIMARY KEY,store_id TEXT NOT NULL,shift_id TEXT NOT NULL,user_id TEXT NOT NULL,type TEXT NOT NULL,amount REAL NOT NULL,reason TEXT,created_at TEXT NOT NULL,FOREIGN KEY(store_id) REFERENCES stores(id),FOREIGN KEY(shift_id) REFERENCES shifts(id),FOREIGN KEY(user_id) REFERENCES users(id));
     CREATE TABLE IF NOT EXISTS audit_logs (id TEXT PRIMARY KEY,user_id TEXT,action TEXT NOT NULL,entity_type TEXT NOT NULL,entity_id TEXT,details TEXT,created_at TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL);
@@ -39,6 +39,8 @@ export function getDatabase(): DatabaseSync {
   `);
   try { database.exec("ALTER TABLE sales ADD COLUMN payment_details_json TEXT NOT NULL DEFAULT '{}'"); } catch {}
   try { database.exec("ALTER TABLE businesses ADD COLUMN vertical TEXT NOT NULL DEFAULT 'RETAIL'"); } catch {}
+  try { database.exec("ALTER TABLE returns ADD COLUMN refund_method TEXT NOT NULL DEFAULT 'CASH'"); } catch {}
+  try { database.exec("ALTER TABLE returns ADD COLUMN refund_reference TEXT"); } catch {}
   try { database.exec("ALTER TABLE businesses ADD COLUMN vertical_locked INTEGER NOT NULL DEFAULT 1"); } catch {}
   return database;
 }
