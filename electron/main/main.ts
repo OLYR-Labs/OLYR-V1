@@ -1,7 +1,7 @@
 import { app,BrowserWindow,ipcMain } from "electron";
 import path from "node:path";
 import { getDatabase } from "../database/database";
-import { login,logout,supportChangeVertical } from "../ipc/auth";
+import { login,logout,demoLogin,supportChangeVertical } from "../ipc/auth";
 import { completeSetup,getSetupStatus } from "../ipc/setup";
 import { dashboard,listProducts,createProduct,startShift,currentShift,closeShift,completeSale,salesHistory,saleDetails,inventory,profitReport,createCustomer,customers,purchases,createPurchase,suppliers,saveSetting,getSettings,heldBills,holdBill,retrieveHeldBill,deleteHeldBill } from "../ipc/pos";
 import { completeMixedSale } from "../ipc/mixed-payment";
@@ -10,7 +10,7 @@ import { hardwareStatus,configureHardware,openCashDrawer,testPrinter } from "../
 const isDevelopment=!app.isPackaged;
 function registerIpc(){
  ipcMain.handle("setup:get-status",()=>getSetupStatus()); ipcMain.handle("setup:complete",(_e,input)=>completeSetup(input));
- ipcMain.handle("auth:login",(_e,input)=>login(input)); ipcMain.handle("auth:logout",(_e,id:string)=>logout(id)); ipcMain.handle("support:change-vertical",(_e,input)=>supportChangeVertical(input.sessionId,input.vertical,input.supportKey));
+ ipcMain.handle("auth:login",(_e,input)=>login(input)); ipcMain.handle("auth:demo",()=>demoLogin()); ipcMain.handle("auth:logout",(_e,id:string)=>logout(id)); ipcMain.handle("support:change-vertical",(_e,input)=>supportChangeVertical(input.sessionId,input.vertical,input.supportKey));
  ipcMain.handle("pos:dashboard",(_e,id:string)=>dashboard(id)); ipcMain.handle("pos:products",(_e,id:string,q?:string)=>listProducts(id,q));
  ipcMain.handle("pos:create-product",(_e,input)=>createProduct(input)); ipcMain.handle("pos:start-shift",(_e,id:string,c:number)=>startShift(id,c)); ipcMain.handle("pos:current-shift",(_e,id:string)=>currentShift(id)); ipcMain.handle("pos:close-shift",(_e,id:string,c:number)=>closeShift(id,c));
  ipcMain.handle("pos:complete-sale",(_e,input)=>completeSale(input)); ipcMain.handle("pos:complete-mixed-sale",(_e,input)=>completeMixedSale(input)); ipcMain.handle("pos:sales",(_e,id:string)=>salesHistory(id)); ipcMain.handle("pos:sale-details",(_e,input)=>saleDetails(input.sessionId,input.saleId)); ipcMain.handle("pos:inventory",(_e,id:string)=>inventory(id)); ipcMain.handle("pos:profit",(_e,id:string)=>profitReport(id));
