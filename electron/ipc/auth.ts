@@ -55,9 +55,14 @@ export function demoLogin(requestedVertical="RETAIL"):AuthenticatedSession{
    db.prepare("INSERT INTO businesses(id,name,phone,currency,vertical,vertical_locked,is_demo,created_at,updated_at) VALUES(?,?,?,?,?,1,1,?,?)").run(businessId,profile.business,null,"LKR",vertical,now,now);
    db.prepare("INSERT INTO stores(id,business_id,name,address,created_at,updated_at) VALUES(?,?,?,?,?,?)").run(storeId,businessId,profile.store,"OLYR Demo",now,now);
    db.prepare("INSERT INTO users(id,business_id,store_id,name,email,role,password_hash,password_salt,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)").run(userId,businessId,storeId,"Demo User",`demo+${vertical.toLowerCase()}@olyr.local`,"ADMINISTRATOR",hash,salt,now,now);
+   const categoryIds=new Map<string,string>();
    for(const [name,cat,price,stock] of profile.categories){
-    const cid=randomUUID();
-    db.prepare("INSERT INTO categories(id,business_id,name,created_at) VALUES(?,?,?,?)").run(cid,businessId,cat,now);
+    let cid=categoryIds.get(cat);
+    if(!cid){
+     cid=randomUUID();
+     db.prepare("INSERT INTO categories(id,business_id,name,created_at) VALUES(?,?,?,?)").run(cid,businessId,cat,now);
+     categoryIds.set(cat,cid);
+    }
     const sku=`DEMO-${vertical}-${name.replace(/[^A-Z0-9]+/gi,"-").replace(/^-|-$/g,"").slice(0,18).toUpperCase()}`;
     db.prepare("INSERT INTO products(id,business_id,category_id,sku,barcode,name,cost_price,selling_price,stock,min_stock,unit,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)").run(randomUUID(),businessId,cid,sku,sku,name,Number(price)*.7,price,stock,5,"pcs",now,now);
    }
