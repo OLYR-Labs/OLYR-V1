@@ -5,7 +5,7 @@ export interface LoginInput{email:string;password:string}
 export interface AuthenticatedSession{sessionId:string;expiresAt:string;demo:boolean;user:{id:string;name:string;email:string;role:string};business:{id:string;name:string;currency:string};store:{id:string;name:string;address:string};vertical:{id:string;locked:boolean}}
 const sessions=new Map<string,{expiresAt:number;userId:string;demo:boolean}>();
 const SESSION_DURATION_MS=8*60*60*1000;
-const DEMO_SESSION_DURATION_MS=30*60*1000;
+const DEMO_SESSION_DURATION_MS=20*60*1000;
 export function login(raw:LoginInput):AuthenticatedSession{
  const email=raw.email.trim().toLowerCase(); if(!email||!raw.password) throw new Error("Enter your email and password.");
  const row=getDatabase().prepare(`SELECT u.id user_id,u.name user_name,u.email user_email,u.role user_role,u.password_hash,u.password_salt,b.id business_id,b.name business_name,b.currency business_currency,b.vertical business_vertical,b.vertical_locked business_vertical_locked,s.id store_id,s.name store_name,s.address store_address FROM users u JOIN businesses b ON b.id=u.business_id JOIN stores s ON s.id=u.store_id WHERE lower(u.email)=? LIMIT 1`).get(email) as any;
