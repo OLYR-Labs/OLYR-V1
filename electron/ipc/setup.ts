@@ -53,7 +53,7 @@ function validateSetup(input: SetupInput): SetupInput {
 
 export function getSetupStatus() {
   const db = getDatabase();
-  const business = db.prepare("SELECT id, name, phone, currency, vertical, vertical_locked FROM businesses ORDER BY created_at LIMIT 1").get() as
+  const business = db.prepare("SELECT id, name, phone, currency, vertical, vertical_locked FROM businesses WHERE COALESCE(is_demo,0)=0 ORDER BY created_at LIMIT 1").get() as
     | { id: string; name: string; phone: string | null; currency: string }
     | undefined;
 
