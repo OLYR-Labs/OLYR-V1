@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { getDatabase } from "../database/database";
 import { hashPassword } from "../security/password";
+import { DEMO_BUILD } from "../config/distribution";
 
 export interface SetupInput {
   businessName: string;
@@ -53,6 +54,7 @@ function validateSetup(input: SetupInput): SetupInput {
 
 export function getSetupStatus() {
   const db = getDatabase();
+  if (DEMO_BUILD) return { isSetupComplete: true as const, demoBuild: true as const, business: null, store: null, user: null };
   const business = db.prepare("SELECT id, name, phone, currency, vertical, vertical_locked FROM businesses WHERE COALESCE(is_demo,0)=0 ORDER BY created_at LIMIT 1").get() as
     | { id: string; name: string; phone: string | null; currency: string; vertical: string; vertical_locked: number }
     | undefined;
@@ -76,6 +78,7 @@ export function getSetupStatus() {
 }
 
 export function completeSetup(rawInput: SetupInput) {
+  if (DEMO_BUILD) throw new Error("This OLYR POS distribution is demo-only. Business setup is disabled.");
   const input = validateSetup(rawInput);
   const db = getDatabase();
 
