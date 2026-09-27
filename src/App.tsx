@@ -14,7 +14,7 @@ function Pos({session,onLogout}:{session:any;onLogout:()=>void}){
  const searchRef=useRef<HTMLInputElement>(null),discountRef=useRef<HTMLInputElement>(null);
  const refresh=async()=>{setDash(await window.olyr.pos.dashboard(session.sessionId));setProducts(await window.olyr.pos.products(session.sessionId,q));setShift(await window.olyr.pos.currentShift(session.sessionId))};
  const refreshHeld=async()=>setHeld(await window.olyr.pos.heldBills(session.sessionId));
- useEffect(()=>{void refresh()},[q]);useEffect(()=>{const t=window.setInterval(()=>setNow(new Date()),1000);return()=>window.clearInterval(t)},[]);
+ useEffect(()=>{void refresh()},[q]);useEffect(()=>{const t=window.setInterval(()=>setNow(new Date()),1000);return()=>window.clearInterval(t)},[]);useEffect(()=>{if(!session.demo||!session.expiresAt)return;const updateTimer=()=>{const remaining=Math.max(0,Math.ceil((new Date(session.expiresAt).getTime()-Date.now())/1000));setDemoSecondsLeft(remaining);if(remaining===0){void onLogout()}};updateTimer();const t=window.setInterval(updateTimer,250);return()=>window.clearInterval(t)},[session.demo,session.expiresAt]);
  const subtotal=useMemo(()=>cart.reduce((n,p)=>n+p.selling_price*p.qty,0),[cart]);const total=useMemo(()=>Math.max(0,subtotal-Math.min(subtotal,Number(discount)||0)),[subtotal,discount]);
  const add=(p:any)=>setCart(c=>{const index=c.findIndex(i=>i.id===p.id);if(index>=0){setSelected(index);return c.map(i=>i.id===p.id?{...i,qty:i.qty+1}:i)}setSelected(c.length);return[...c,{...p,qty:1}]});
  const changeQty=(index:number,delta:number)=>setCart(c=>c.flatMap((x,i)=>i===index?(x.qty+delta>0?[{...x,qty:x.qty+delta}]:[]):[x]));
