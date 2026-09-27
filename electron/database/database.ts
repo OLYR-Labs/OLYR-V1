@@ -12,7 +12,7 @@ export function getDatabase(): DatabaseSync {
   database = new DatabaseSync(path.join(dir, "olyr-pos.sqlite"));
   database.exec("PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;");
   database.exec(`
-    CREATE TABLE IF NOT EXISTS businesses (id TEXT PRIMARY KEY,name TEXT NOT NULL,phone TEXT,currency TEXT NOT NULL DEFAULT 'LKR',logo_path TEXT,address TEXT,email TEXT,tax_number TEXT,receipt_footer TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS businesses (id TEXT PRIMARY KEY,name TEXT NOT NULL,phone TEXT,currency TEXT NOT NULL DEFAULT 'LKR',logo_path TEXT,address TEXT,email TEXT,tax_number TEXT,receipt_footer TEXT,vertical TEXT NOT NULL DEFAULT 'RETAIL',vertical_locked INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS stores (id TEXT PRIMARY KEY,business_id TEXT NOT NULL,name TEXT NOT NULL,address TEXT NOT NULL,phone TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,FOREIGN KEY(business_id) REFERENCES businesses(id) ON DELETE CASCADE);
     CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY,business_id TEXT NOT NULL,store_id TEXT NOT NULL,name TEXT NOT NULL,email TEXT NOT NULL,role TEXT NOT NULL DEFAULT 'ADMINISTRATOR',password_hash TEXT NOT NULL,password_salt TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,UNIQUE(business_id,email),FOREIGN KEY(business_id) REFERENCES businesses(id) ON DELETE CASCADE,FOREIGN KEY(store_id) REFERENCES stores(id) ON DELETE CASCADE);
     CREATE TABLE IF NOT EXISTS categories (id TEXT PRIMARY KEY,business_id TEXT NOT NULL,name TEXT NOT NULL,active INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL,UNIQUE(business_id,name),FOREIGN KEY(business_id) REFERENCES businesses(id) ON DELETE CASCADE);
@@ -38,6 +38,8 @@ export function getDatabase(): DatabaseSync {
     CREATE INDEX IF NOT EXISTS idx_cash_movements_shift ON cash_movements(shift_id,created_at);
   `);
   try { database.exec("ALTER TABLE sales ADD COLUMN payment_details_json TEXT NOT NULL DEFAULT '{}'"); } catch {}
+  try { database.exec("ALTER TABLE businesses ADD COLUMN vertical TEXT NOT NULL DEFAULT 'RETAIL'"); } catch {}
+  try { database.exec("ALTER TABLE businesses ADD COLUMN vertical_locked INTEGER NOT NULL DEFAULT 1"); } catch {}
   return database;
 }
 export function closeDatabase(){ if(database){ database.close(); database=null; } }
