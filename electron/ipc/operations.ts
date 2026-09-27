@@ -7,7 +7,7 @@ const manager=(role:string)=>["ADMINISTRATOR","ADMIN","MANAGER","OWNER"].include
 
 export function splitSalePayments(sessionId:string,saleId:string,payments:{method:string;amount:number;details?:Record<string,string>}[]){
   const c=ctx(sessionId);if(!payments.length)throw new Error("Add at least one payment.");
-  for(const p of payments){const method=String(p.method||"").toUpperCase();const amount=Number(p.amount);if(!["CASH","CARD","QR","BANK_TRANSFER"].includes(method))throw new Error("Select a valid payment method.");if(!Number.isFinite(amount)||amount<=0)throw new Error("Every payment amount must be greater than zero.");if(method!=="CASH"&&!p.details)throw new Error("Payment details are required for non-cash payments.");}
+  for(const p of payments){const method=String(p.method||"").toUpperCase();const amount=Number(p.amount);if(!["CASH","CARD","QR","BANK_TRANSFER"].includes(method))throw new Error("Select a valid payment method.");if(!Number.isFinite(amount)||amount<=0)throw new Error("Every payment amount must be greater than zero.");}
   const sale=c.db.prepare("SELECT * FROM sales WHERE id=? AND store_id=? AND status='COMPLETED'").get(saleId,c.storeId) as any;if(!sale)throw new Error("Sale not found.");
   const total=payments.reduce((n,p)=>n+Number(p.amount||0),0);if(Math.abs(total-Number(sale.total))>0.01)throw new Error("Payment amounts must equal the sale total.");
   c.db.prepare("UPDATE sales SET payment_method='MIXED',payment_details_json=? WHERE id=?").run(JSON.stringify(payments.map(p=>({method:p.method,amount:Number(p.amount),details:p.details||{}}))),saleId);
