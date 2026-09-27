@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit && tsc -p tsconfig.electron.json --noEmit",
     "preview": "vite preview",
     "build:full": "node scripts/set-build-mode.cjs full && npm run build",
-    "build:demo": "node scripts/set-build-mode.cjs demo && npm run build"
+    "build:demo": "node scripts/set-build-mode.cjs demo && npm run build",
+    "postbuild:demo": "node scripts/set-build-mode.cjs full"
   },
   "dependencies": {
     "@vitejs/plugin-react": "6.1.1",
