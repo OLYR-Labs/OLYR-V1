@@ -11,9 +11,11 @@ export interface SetupInput {
   adminName: string;
   adminEmail: string;
   password: string;
+  vertical: string;
 }
 
 const allowedCurrencies = new Set(["LKR", "USD", "EUR"]);
+const allowedVerticals = new Set(["RETAIL","RESTAURANT","PHARMACY","SUPERMARKET","WHOLESALE","FASHION","CUSTOM"]);
 
 function clean(value: string, maxLength: number): string {
   return value.trim().slice(0, maxLength);
@@ -29,11 +31,13 @@ function validateSetup(input: SetupInput): SetupInput {
     adminName: clean(input.adminName, 120),
     adminEmail: clean(input.adminEmail, 254).toLowerCase(),
     password: input.password,
+    vertical: clean(input.vertical || "RETAIL", 32).toUpperCase(),
   };
 
   if (!result.businessName || !result.storeName || !result.storeAddress || !result.adminName || !result.adminEmail) {
     throw new Error("Please complete all required setup fields.");
   }
+  if (!allowedVerticals.has(result.vertical)) throw new Error("Please select a supported business type.");
   if (!allowedCurrencies.has(result.currency)) {
     throw new Error("That currency is not supported yet.");
   }
@@ -49,7 +53,7 @@ function validateSetup(input: SetupInput): SetupInput {
 
 export function getSetupStatus() {
   const db = getDatabase();
-  const business = db.prepare("SELECT id, name, phone, currency FROM businesses ORDER BY created_at LIMIT 1").get() as
+  const business = db.prepare("SELECT id, name, phone, currency, vertical, vertical_locked FROM businesses ORDER BY created_at LIMIT 1").get() as
     | { id: string; name: string; phone: string | null; currency: string }
     | undefined;
 
@@ -65,7 +69,7 @@ export function getSetupStatus() {
 
   return {
     isSetupComplete: Boolean(store && user),
-    business: { id: business.id, name: business.name, phone: business.phone ?? "", currency: business.currency },
+    business: { id: business.id, name: business.name, phone: business.phone ?? "", currency: business.currency, vertical: business.vertical ?? "RETAIL", verticalLocked: Boolean(business.vertical_locked ?? 1) },
     store: store ? { id: store.id, name: store.name, address: store.address } : null,
     user: user ? { id: user.id, name: user.name, email: user.email, role: user.role } : null,
   };
@@ -88,8 +92,8 @@ export function completeSetup(rawInput: SetupInput) {
   db.exec("BEGIN IMMEDIATE");
   try {
     db.prepare(
-      "INSERT INTO businesses (id, name, phone, currency, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-    ).run(businessId, input.businessName, input.businessPhone || null, input.currency, now, now);
+      "INSERT INTO businesses (id, name, phone, currency, vertical, vertical_locked, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?)",
+    ).run(businessId, input.businessName, input.businessPhone || null, input.currency, input.vertical, now, now);
 
     db.prepare(
       "INSERT INTO stores (id, business_id, name, address, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
