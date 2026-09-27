@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { getDatabase } from "../database/database";
-import { assertNotDemo, requireSession } from "./auth";
+import { requireSession } from "./auth";
 const exec=promisify(execFile);
 export type HardwareType="CASH_DRAWER"|"RECEIPT_PRINTER"|"BARCODE_SCANNER"|"LABEL_PRINTER"|"CUSTOMER_DISPLAY"|"PAYMENT_TERMINAL";
 
@@ -10,7 +10,7 @@ function storeIdForSession(sessionId:string){const {userId}=requireSession(sessi
 
 export function hardwareStatus(sessionId:string){const storeId=storeIdForSession(sessionId);return getDatabase().prepare(`SELECT * FROM hardware_devices WHERE store_id=? ORDER BY type`).all(storeId)}
 
-export function configureHardware(sessionId:string,input:{type:HardwareType;name:string;connection:string;config?:Record<string,unknown>}){assertNotDemo(sessionId,"hardware configuration");const storeId=storeIdForSession(sessionId);const db=getDatabase(),now=new Date().toISOString(),existing=db.prepare(`SELECT id FROM hardware_devices WHERE store_id=? AND type=?`).get(storeId,input.type) as any;if(existing){db.prepare(`UPDATE hardware_devices SET name=?,connection=?,config_json=?,status='CONFIGURED',updated_at=? WHERE id=?`).run(input.name,input.connection,JSON.stringify(input.config||{}),now,existing.id);return existing.id}const id=randomUUID();db.prepare(`INSERT INTO hardware_devices(id,store_id,type,name,connection,status,config_json,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)`).run(id,storeId,input.type,input.name,input.connection,"CONFIGURED",JSON.stringify(input.config||{}),now,now);return id}
+export function configureHardware(sessionId:string,input:{type:HardwareType;name:string;connection:string;config?:Record<string,unknown>}){const storeId=storeIdForSession(sessionId);const db=getDatabase(),now=new Date().toISOString(),existing=db.prepare(`SELECT id FROM hardware_devices WHERE store_id=? AND type=?`).get(storeId,input.type) as any;if(existing){db.prepare(`UPDATE hardware_devices SET name=?,connection=?,config_json=?,status='CONFIGURED',updated_at=? WHERE id=?`).run(input.name,input.connection,JSON.stringify(input.config||{}),now,existing.id);return existing.id}const id=randomUUID();db.prepare(`INSERT INTO hardware_devices(id,store_id,type,name,connection,status,config_json,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)`).run(id,storeId,input.type,input.name,input.connection,"CONFIGURED",JSON.stringify(input.config||{}),now,now);return id}
 
 export async function detectHardware(sessionId:string){
   const storeId=storeIdForSession(sessionId);
@@ -45,6 +45,6 @@ export async function detectHardware(sessionId:string){
   return detected;
 }
 
-export async function openCashDrawer(sessionId:string){assertNotDemo(sessionId,"hardware control");requireSession(sessionId);const devices=hardwareStatus(sessionId) as any[];const d=devices.find(x=>x.type==="CASH_DRAWER"&&x.status==="CONFIGURED")||devices.find(x=>x.type==="RECEIPT_PRINTER"&&x.status==="CONFIGURED");if(!d)return{opened:false,reason:"NOT_CONFIGURED"};const cfg=JSON.parse(d.config_json||"{}");const port=cfg.port?String(cfg.port):"";if(!port)return{opened:false,reason:"NOT_CONFIGURED"};try{await exec("powershell.exe",["-NoProfile","-Command",`$p=[System.IO.Ports.SerialPort]::new('${port}',9600,'None',8,'One');$p.Open();$p.Write([byte[]](27,112,0,25,250),0,5);$p.Close()`],{windowsHide:true});return{opened:true}}catch{return{opened:false,reason:"UNAVAILABLE"}}}
+export async function openCashDrawer(sessionId:string){requireSession(sessionId);const devices=hardwareStatus(sessionId) as any[];const d=devices.find(x=>x.type==="CASH_DRAWER"&&x.status==="CONFIGURED")||devices.find(x=>x.type==="RECEIPT_PRINTER"&&x.status==="CONFIGURED");if(!d)return{opened:false,reason:"NOT_CONFIGURED"};const cfg=JSON.parse(d.config_json||"{}");const port=cfg.port?String(cfg.port):"";if(!port)return{opened:false,reason:"NOT_CONFIGURED"};try{await exec("powershell.exe",["-NoProfile","-Command",`$p=[System.IO.Ports.SerialPort]::new('${port}',9600,'None',8,'One');$p.Open();$p.Write([byte[]](27,112,0,25,250),0,5);$p.Close()`],{windowsHide:true});return{opened:true}}catch{return{opened:false,reason:"UNAVAILABLE"}}}
 
-export async function testPrinter(sessionId:string){assertNotDemo(sessionId,"hardware testing");requireSession(sessionId);return{success:true,message:"Printer test is ready; configure its Windows printer or serial endpoint in Hardware Settings."}}
+export async function testPrinter(sessionId:string){requireSession(sessionId);return{success:true,message:"Printer test is ready; configure its Windows printer or serial endpoint in Hardware Settings."}}
