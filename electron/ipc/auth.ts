@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { getDatabase } from "../database/database";
-import { verifyPassword } from "../security/password";
+import { hashPassword, verifyPassword } from "../security/password";
 export interface LoginInput{email:string;password:string}
 export interface AuthenticatedSession{sessionId:string;expiresAt:string;user:{id:string;name:string;email:string;role:string};business:{id:string;name:string;currency:string};store:{id:string;name:string;address:string};vertical:{id:string;locked:boolean}}
 const sessions=new Map<string,{expiresAt:number;userId:string}>();
