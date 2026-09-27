@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { getDatabase } from "../database/database";
-import { audit, requireSession } from "./auth";
+import { assertNotDemo, audit, requireSession } from "./auth";
 
 const ctx=(sessionId:string)=>{const {userId}=requireSession(sessionId);const db=getDatabase();const u=db.prepare("SELECT business_id,store_id,role FROM users WHERE id=?").get(userId) as any;if(!u)throw new Error("User account could not be found.");return {userId,businessId:u.business_id,storeId:u.store_id,role:String(u.role||"").toUpperCase(),db}};
 const manager=(role:string)=>["ADMINISTRATOR","ADMIN","MANAGER","OWNER"].includes(role);
@@ -14,7 +14,7 @@ export function splitSalePayments(sessionId:string,saleId:string,payments:{metho
   audit(c.userId,"SPLIT_PAYMENT","SALE",saleId,`Mixed payment total ${total}`);return{success:true};
 }
 
-export function cashMovement(sessionId:string,type:"CASH_IN"|"CASH_OUT",amount:number,reason:string){
+export function cashMovement(sessionId:string,type:"CASH_IN"|"CASH_OUT",amount:number,reason:string){assertNotDemo(sessionId,"cash movements");
   const c=ctx(sessionId);const sh=c.db.prepare("SELECT id FROM shifts WHERE user_id=? AND status='OPEN' ORDER BY opened_at DESC LIMIT 1").get(c.userId) as any;if(!sh)throw new Error("Start your shift before recording cash movement.");
   const value=Number(amount);if(!Number.isFinite(value)||value<=0)throw new Error("Enter a valid amount.");if(!reason.trim())throw new Error("Enter a reason.");
   const id=randomUUID();c.db.prepare("INSERT INTO cash_movements(id,store_id,shift_id,user_id,type,amount,reason,created_at) VALUES(?,?,?,?,?,?,?,?)").run(id,c.storeId,sh.id,c.userId,type,value,reason.trim(),new Date().toISOString());audit(c.userId,type,"CASH_MOVEMENT",id,`${value}: ${reason}`);return{id};
@@ -22,7 +22,7 @@ export function cashMovement(sessionId:string,type:"CASH_IN"|"CASH_OUT",amount:n
 
 export function cashMovements(sessionId:string){const c=ctx(sessionId);return c.db.prepare("SELECT * FROM cash_movements WHERE store_id=? ORDER BY created_at DESC LIMIT 200").all(c.storeId)}
 
-export function voidSale(sessionId:string,saleId:string,reason:string){
+export function voidSale(sessionId:string,saleId:string,reason:string){assertNotDemo(sessionId,"sale voiding");
   const c=ctx(sessionId);if(!manager(c.role))throw new Error("Manager approval is required to void a completed sale.");
   const sale=c.db.prepare("SELECT * FROM sales WHERE id=? AND store_id=? AND status='COMPLETED'").get(saleId,c.storeId) as any;if(!sale)throw new Error("Completed sale not found.");
   if(!reason.trim())throw new Error("Enter a void reason.");
@@ -40,6 +40,6 @@ export function paymentSummary(sessionId:string){const c=ctx(sessionId);return c
 
 export function lowStock(sessionId:string){const c=ctx(sessionId);return c.db.prepare("SELECT * FROM products WHERE business_id=? AND active=1 AND stock<=min_stock ORDER BY stock ASC,name ASC").all(c.businessId)}
 
-export function adjustStock(sessionId:string,productId:string,quantity:number,reason:string){const c=ctx(sessionId);if(!manager(c.role))throw new Error("Manager approval is required for stock adjustments.");const q=Number(quantity);if(!Number.isFinite(q)||q===0)throw new Error("Enter a non-zero stock adjustment.");if(!reason.trim())throw new Error("Enter a reason.");const p=c.db.prepare("SELECT * FROM products WHERE id=? AND business_id=? AND active=1").get(productId,c.businessId) as any;if(!p)throw new Error("Product not found.");if(Number(p.stock)+q<0)throw new Error("Stock cannot become negative.");const now=new Date().toISOString();c.db.prepare("UPDATE products SET stock=stock+?,updated_at=? WHERE id=?").run(q,now,productId);c.db.prepare("INSERT INTO inventory_movements(id,product_id,user_id,type,quantity,reason,created_at) VALUES(?,?,?,?,?,?,?)").run(randomUUID(),productId,c.userId,"ADJUSTMENT",q,reason.trim(),now);audit(c.userId,"ADJUST_STOCK","PRODUCT",productId,`${q}: ${reason}`);return{success:true,stock:Number(p.stock)+q}}
+export function adjustStock(sessionId:string,productId:string,quantity:number,reason:string){assertNotDemo(sessionId,"stock adjustments");const c=ctx(sessionId);if(!manager(c.role))throw new Error("Manager approval is required for stock adjustments.");const q=Number(quantity);if(!Number.isFinite(q)||q===0)throw new Error("Enter a non-zero stock adjustment.");if(!reason.trim())throw new Error("Enter a reason.");const p=c.db.prepare("SELECT * FROM products WHERE id=? AND business_id=? AND active=1").get(productId,c.businessId) as any;if(!p)throw new Error("Product not found.");if(Number(p.stock)+q<0)throw new Error("Stock cannot become negative.");const now=new Date().toISOString();c.db.prepare("UPDATE products SET stock=stock+?,updated_at=? WHERE id=?").run(q,now,productId);c.db.prepare("INSERT INTO inventory_movements(id,product_id,user_id,type,quantity,reason,created_at) VALUES(?,?,?,?,?,?,?)").run(randomUUID(),productId,c.userId,"ADJUSTMENT",q,reason.trim(),now);audit(c.userId,"ADJUST_STOCK","PRODUCT",productId,`${q}: ${reason}`);return{success:true,stock:Number(p.stock)+q}}
 
 export function barcodeLabelData(sessionId:string){const c=ctx(sessionId);return c.db.prepare("SELECT id,name,sku,barcode,selling_price,unit FROM products WHERE business_id=? AND active=1 AND COALESCE(barcode,'')<>'' ORDER BY name").all(c.businessId)}
