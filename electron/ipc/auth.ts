@@ -16,3 +16,13 @@ export function login(raw:LoginInput):AuthenticatedSession{
 export function logout(id:string){const s=sessions.get(id);if(s){audit(s.userId,"LOGOUT","USER",s.userId,"Signed out");sessions.delete(id)}}
 export function requireSession(id:string){const s=sessions.get(id);if(!s||s.expiresAt<=Date.now()){if(s)sessions.delete(id);throw new Error("Your session has expired. Please sign in again.")}return{userId:s.userId}}
 export function audit(userId:string,action:string,entityType:string,entityId:string|null,details:string){getDatabase().prepare(`INSERT INTO audit_logs(id,user_id,action,entity_type,entity_id,details,created_at) VALUES(?,?,?,?,?,?,?)`).run(randomUUID(),userId,action,entityType,entityId,details,new Date().toISOString())}
+
+export function supportChangeVertical(sessionId:string,newVertical:string,supportKey:string){
+ const {userId}=requireSession(sessionId); const db=getDatabase(); const expected=process.env.OLYR_SUPPORT_KEY;
+ if(!expected||supportKey!==expected) throw new Error("Invalid OLYR support authorization.");
+ const vertical=String(newVertical||"").trim().toUpperCase();
+ if(!["RETAIL","RESTAURANT","PHARMACY","SUPERMARKET","WHOLESALE","FASHION","CUSTOM"].includes(vertical)) throw new Error("Unsupported business vertical.");
+ const row=db.prepare("SELECT business_id FROM users WHERE id=?").get(userId) as any; if(!row) throw new Error("User account could not be found.");
+ db.prepare("UPDATE businesses SET vertical=?,vertical_locked=1,updated_at=? WHERE id=?").run(vertical,new Date().toISOString(),row.business_id);
+ audit(userId,"SUPPORT_VERTICAL_CHANGE","BUSINESS",row.business_id,vertical); return {vertical,locked:true};
+}
