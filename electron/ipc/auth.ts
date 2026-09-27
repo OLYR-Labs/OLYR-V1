@@ -20,7 +20,7 @@ export function assertNotDemo(sessionId:string,action:string){const {demo}=requi
 export function audit(userId:string,action:string,entityType:string,entityId:string|null,details:string){getDatabase().prepare(`INSERT INTO audit_logs(id,user_id,action,entity_type,entity_id,details,created_at) VALUES(?,?,?,?,?,?,?)`).run(randomUUID(),userId,action,entityType,entityId,details,new Date().toISOString())}
 
 export function supportChangeVertical(sessionId:string,newVertical:string,supportKey:string){
- const {userId}=requireSession(sessionId); const db=getDatabase(); const expected=process.env.OLYR_SUPPORT_KEY;
+ const {userId,demo}=requireSession(sessionId); if(demo) throw new Error("Demo mode: platform changes are disabled."); const db=getDatabase(); const expected=process.env.OLYR_SUPPORT_KEY;
  if(!expected||supportKey!==expected) throw new Error("Invalid OLYR support authorization.");
  const vertical=String(newVertical||"").trim().toUpperCase();
  if(!["RETAIL","RESTAURANT","PHARMACY","SUPERMARKET","WHOLESALE","FASHION","CUSTOM"].includes(vertical)) throw new Error("Unsupported business vertical.");
