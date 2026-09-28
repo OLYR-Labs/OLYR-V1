@@ -3,12 +3,12 @@ import { getDatabase } from "../database/database";
 import { audit, requireSession } from "./auth";
 
 const ctx=(sessionId:string)=>{
-  const {userId}=requireSession(sessionId);
+  const {userId,testVertical}=requireSession(sessionId);
   const db=getDatabase();
   const u=db.prepare("SELECT business_id,store_id,role FROM users WHERE id=?").get(userId) as any;
   if(!u) throw new Error("User account could not be found.");
   const b=db.prepare("SELECT vertical FROM businesses WHERE id=?").get(u.business_id) as any;
-  return {userId,businessId:u.business_id,storeId:u.store_id,role:String(u.role||"").toUpperCase(),vertical:String(b?.vertical||"RETAIL"),db};
+  return {userId,businessId:u.business_id,storeId:u.store_id,role:String(u.role||"").toUpperCase(),vertical:String(testVertical||b?.vertical||"RETAIL"),db};
 };
 const manager=(role:string)=>["ADMINISTRATOR","ADMIN","MANAGER","OWNER"].includes(role);
 
