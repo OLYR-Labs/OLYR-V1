@@ -3,7 +3,7 @@ import { getDatabase } from "../database/database";
 import { hashPassword, verifyPassword } from "../security/password";
 export interface LoginInput{email:string;password:string}
 export interface AuthenticatedSession{sessionId:string;expiresAt:string;demo:boolean;user:{id:string;name:string;email:string;role:string};business:{id:string;name:string;currency:string};store:{id:string;name:string;address:string};vertical:{id:string;locked:boolean}}
-const sessions=new Map<string,{expiresAt:number;userId:string;demo:boolean}>();
+const sessions=new Map<string,{expiresAt:number;userId:string;demo:boolean;testVertical?:string}>();
 const SESSION_DURATION_MS=8*60*60*1000;
 const DEMO_SESSION_DURATION_MS=20*60*1000;
 export function login(raw:LoginInput):AuthenticatedSession{
@@ -15,9 +15,21 @@ export function login(raw:LoginInput):AuthenticatedSession{
  return {sessionId,expiresAt:new Date(expiresAt).toISOString(),demo:false,user:{id:row.user_id,name:row.user_name,email:row.user_email,role:row.user_role},business:{id:row.business_id,name:row.business_name,currency:row.business_currency},store:{id:row.store_id,name:row.store_name,address:row.store_address},vertical:{id:String(row.business_vertical||"RETAIL"),locked:Boolean(row.business_vertical_locked??1)}};
 }
 export function logout(id:string){const s=sessions.get(id);if(s){audit(s.userId,"LOGOUT","USER",s.userId,"Signed out");sessions.delete(id)}}
-export function requireSession(id:string){const s=sessions.get(id);if(!s||s.expiresAt<=Date.now()){if(s)sessions.delete(id);throw new Error("Your session has expired. Please sign in again.")}return{userId:s.userId,demo:s.demo}}
+export function requireSession(id:string){const s=sessions.get(id);if(!s||s.expiresAt<=Date.now()){if(s)sessions.delete(id);throw new Error("Your session has expired. Please sign in again.")}return{userId:s.userId,demo:s.demo,testVertical:s.testVertical}}
 export function assertNotDemo(sessionId:string,action:string){const {demo}=requireSession(sessionId);if(demo)throw new Error(`Demo mode: ${action} is disabled. Use the sample checkout and industry workspace to explore OLYR POS.`)}
 export function audit(userId:string,action:string,entityType:string,entityId:string|null,details:string){getDatabase().prepare(`INSERT INTO audit_logs(id,user_id,action,entity_type,entity_id,details,created_at) VALUES(?,?,?,?,?,?,?)`).run(randomUUID(),userId,action,entityType,entityId,details,new Date().toISOString())}
+
+
+export function testLogin(email:string,requestedVertical:string):AuthenticatedSession{
+ const allowed=["RETAIL","RESTAURANT","PHARMACY","SUPERMARKET","WHOLESALE","FASHION","CUSTOM"];
+ const vertical=String(requestedVertical||"").trim().toUpperCase(); if(!allowed.includes(vertical)) throw new Error("Unsupported test POS.");
+ if(process.env.NODE_ENV!=="development") throw new Error("POS test shortcuts are available only in development builds.");
+ const db=getDatabase(); const row=db.prepare("SELECT u.id user_id,u.name user_name,u.email user_email,u.role user_role,b.id business_id,b.name business_name,b.currency business_currency,s.id store_id,s.name store_name,s.address store_address FROM users u JOIN businesses b ON b.id=u.business_id JOIN stores s ON s.business_id=b.id WHERE lower(u.email)=? AND COALESCE(b.is_demo,0)=0 LIMIT 1").get(String(email||"").trim().toLowerCase()) as any;
+ if(!row) throw new Error("Your real POS account could not be found.");
+ const expiresAt=Date.now()+SESSION_DURATION_MS,sessionId=randomUUID(); sessions.set(sessionId,{expiresAt,userId:row.user_id,demo:false,testVertical:vertical});
+ audit(row.user_id,"TEST_POS_LOGIN","BUSINESS",row.business_id,"Development test interface · "+vertical);
+ return {sessionId,expiresAt:new Date(expiresAt).toISOString(),demo:false,user:{id:row.user_id,name:row.user_name,email:row.user_email,role:row.user_role},business:{id:row.business_id,name:row.business_name,currency:row.business_currency},store:{id:row.store_id,name:row.store_name,address:row.store_address},vertical:{id:vertical,locked:false}};
+}
 
 export function supportChangeVertical(sessionId:string,newVertical:string,supportKey:string){
  const {userId,demo}=requireSession(sessionId); if(demo) throw new Error("Demo mode: platform changes are disabled."); const db=getDatabase(); const expected=process.env.OLYR_SUPPORT_KEY;
