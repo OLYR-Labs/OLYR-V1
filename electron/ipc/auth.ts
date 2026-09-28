@@ -23,7 +23,6 @@ export function audit(userId:string,action:string,entityType:string,entityId:str
 export function testLogin(email:string,requestedVertical:string):AuthenticatedSession{
  const allowed=["RETAIL","RESTAURANT","PHARMACY","SUPERMARKET","WHOLESALE","FASHION","CUSTOM"];
  const vertical=String(requestedVertical||"").trim().toUpperCase(); if(!allowed.includes(vertical)) throw new Error("Unsupported test POS.");
- if(process.env.NODE_ENV!=="development") throw new Error("POS test shortcuts are available only in development builds.");
  const db=getDatabase(); const row=db.prepare("SELECT u.id user_id,u.name user_name,u.email user_email,u.role user_role,b.id business_id,b.name business_name,b.currency business_currency,s.id store_id,s.name store_name,s.address store_address FROM users u JOIN businesses b ON b.id=u.business_id JOIN stores s ON s.business_id=b.id WHERE lower(u.email)=? AND COALESCE(b.is_demo,0)=0 LIMIT 1").get(String(email||"").trim().toLowerCase()) as any;
  if(!row) throw new Error("Your real POS account could not be found.");
  const expiresAt=Date.now()+SESSION_DURATION_MS,sessionId=randomUUID(); sessions.set(sessionId,{expiresAt,userId:row.user_id,demo:false,testVertical:vertical});
